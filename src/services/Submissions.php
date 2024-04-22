@@ -1,4 +1,5 @@
 <?php
+
 namespace verbb\workflow\services;
 
 use verbb\workflow\Workflow;
@@ -55,7 +56,8 @@ class Submissions extends Component
 
         // Fire an 'afterGetReviewerUserGroups' event
         if ($this->hasEventHandlers(self::EVENT_AFTER_GET_REVIEWER_USER_GROUPS)) {
-            $this->trigger(self::EVENT_AFTER_GET_REVIEWER_USER_GROUPS,
+            $this->trigger(
+                self::EVENT_AFTER_GET_REVIEWER_USER_GROUPS,
                 new ReviewerUserGroupsEvent([
                     'submission' => $submission,
                     'userGroups' => $userGroups,
@@ -93,7 +95,11 @@ class Submissions extends Component
     public function saveSubmission(ElementInterface $entry): bool
     {
         $settings = Workflow::$plugin->getSettings();
-        $session = Craft::$app->getSession();
+        if (Craft::$app->getRequest()->getIsConsoleRequest()) {
+            $session = null;
+        } else {
+            $session = Craft::$app->getSession();
+        }
 
         $submission = $this->_setSubmissionFromPost();
         $submission->siteId = $entry->siteId;
@@ -140,7 +146,9 @@ class Submissions extends Component
             Workflow::$plugin->getEmails()->sendPublisherNotificationEmail($submission, $review, $entry);
         }
 
-        $session->setNotice(Craft::t('workflow', 'Entry submitted for approval.'));
+        if (!Craft::$app->getRequest()->getIsConsoleRequest()) {
+            $session->setNotice(Craft::t('workflow', 'Entry submitted for approval.'));
+        };
 
         return true;
     }
@@ -337,7 +345,7 @@ class Submissions extends Component
 
             return false;
         }
-        
+
         // Create a new review
         $review = $this->_setReviewFromPost($submission, $entry);
         $review->role = Review::ROLE_PUBLISHER;
@@ -403,9 +411,16 @@ class Submissions extends Component
             return $this->submission;
         }
 
-        $request = Craft::$app->getRequest();
-        $submissionId = $request->getParam('submissionId');
-        $siteHandle = $request->getParam('site');
+        if (Craft::$app->getRequest()->getIsConsoleRequest()) {
+            $request = null;
+            $submissionId = null;
+            $siteHandle = null;
+        } else {
+            $request = Craft::$app->getRequest();
+            $submissionId = $request->getParam('submissionId');
+            $siteHandle = $request->getParam('site');
+        }
+
         $site = null;
 
         if ($siteHandle) {
@@ -432,15 +447,20 @@ class Submissions extends Component
     private function _setReviewFromPost(Submission $submission, ElementInterface $entry): Review
     {
         $currentUser = Craft::$app->getUser()->getIdentity();
-        $request = Craft::$app->getRequest();
-
+        if (Craft::$app->getRequest()->getIsConsoleRequest()) {
+            $request = Craft::$app->getRequest();
+        }
         $review = new Review();
         $review->submissionId = $submission->id;
         $review->elementId = $entry->id;
         $review->elementSiteId = $entry->siteId;
         $review->draftId = $entry->draftId;
-        $review->userId = $currentUser->id;
-        $review->setNotes((string)$request->getParam('workflowNotes'));
+        $review->userId = 2; //$currentUser->id;
+        if (Craft::$app->getRequest()->getIsConsoleRequest()) {
+        } else {
+            $review->setNotes((string)$request->getParam('workflowNotes'));
+        }
+
         $review->data = Workflow::$plugin->getContent()->getRevisionData($entry);
 
         return $review;
