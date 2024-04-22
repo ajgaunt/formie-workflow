@@ -447,7 +447,7 @@ class Submissions extends Component
     private function _setReviewFromPost(Submission $submission, ElementInterface $entry): Review
     {
         $currentUser = Craft::$app->getUser()->getIdentity();
-        if (Craft::$app->getRequest()->getIsConsoleRequest()) {
+        if (!Craft::$app->getRequest()->getIsConsoleRequest()) {
             $request = Craft::$app->getRequest();
         }
         $review = new Review();
@@ -456,8 +456,7 @@ class Submissions extends Component
         $review->elementSiteId = $entry->siteId;
         $review->draftId = $entry->draftId;
         $review->userId = 2; //$currentUser->id;
-        if (Craft::$app->getRequest()->getIsConsoleRequest()) {
-        } else {
+        if (!Craft::$app->getRequest()->getIsConsoleRequest()) {
             $review->setNotes((string)$request->getParam('workflowNotes'));
         }
 
