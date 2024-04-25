@@ -97,6 +97,7 @@ class Submissions extends Component
         $settings = Workflow::$plugin->getSettings();
         if (Craft::$app->getRequest()->getIsConsoleRequest()) {
             $session = null;
+            $user_id = 2;
         } else {
             $session = Craft::$app->getSession();
         }
@@ -121,7 +122,7 @@ class Submissions extends Component
         }
 
         // Create a new review
-        $review = $this->_setReviewFromPost($submission, $entry);
+        $review = $this->_setReviewFromPost($submission, $entry, $user);
         $review->role = Review::ROLE_EDITOR;
         $review->status = Review::STATUS_PENDING;
 
@@ -444,18 +445,19 @@ class Submissions extends Component
         return $submission;
     }
 
-    private function _setReviewFromPost(Submission $submission, ElementInterface $entry): Review
+    private function _setReviewFromPost(Submission $submission, ElementInterface $entry, $user = null): Review
     {
         $currentUser = Craft::$app->getUser()->getIdentity();
         if (!Craft::$app->getRequest()->getIsConsoleRequest()) {
             $request = Craft::$app->getRequest();
+            $user = $currentUser->id;
         }
         $review = new Review();
         $review->submissionId = $submission->id;
         $review->elementId = $entry->id;
         $review->elementSiteId = $entry->siteId;
         $review->draftId = $entry->draftId;
-        $review->userId = 2; //$currentUser->id;
+        $review->userId = $user;
         if (!Craft::$app->getRequest()->getIsConsoleRequest()) {
             $review->setNotes((string)$request->getParam('workflowNotes'));
         }
