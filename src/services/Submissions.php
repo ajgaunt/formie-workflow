@@ -97,7 +97,7 @@ class Submissions extends Component
         $settings = Workflow::$plugin->getSettings();
         if (Craft::$app->getRequest()->getIsConsoleRequest()) {
             $session = null;
-            $user_id = 2;
+            $user = 2;
         } else {
             $session = Craft::$app->getSession();
         }
